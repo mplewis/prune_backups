@@ -1,13 +1,12 @@
 package period
 
 import (
-	"fmt"
 	"sort"
 	"time"
 )
 
-// BackupPeriod represents a number of periodic backups to maintain.
-type BackupPeriod struct {
+// Backup represents a number of periodic backups to maintain.
+type Backup struct {
 	Count    int
 	Duration time.Duration
 }
@@ -19,21 +18,12 @@ func SortDesc(times []time.Time) {
 	})
 }
 
-// EarliestTimeWithinInterval picks the earliest time within the interval (base - interval ... base).
-// Times must be in descending order.
+// EarliestTimeWithinInterval picks the earliest time within the interval (base - interval ... base) inclusive.
 func EarliestTimeWithinInterval(interval time.Duration, base time.Time, times []time.Time) time.Time {
 	result := time.Time{}
 	limit := base.Add(-1 * interval)
 	for _, cand := range times {
-		if result.IsZero() {
-			result = cand
-			continue
-		}
-		if cand.Before(limit) {
-			// continue
-			return result
-		}
-		if cand.After(result) {
+		if cand.Before(limit) || cand.After(base) {
 			continue
 		}
 		result = cand
@@ -41,11 +31,22 @@ func EarliestTimeWithinInterval(interval time.Duration, base time.Time, times []
 	return result
 }
 
-// EarlierThan filters a list of Times to all that precede base.
+// EarlierThan filters a list of Times to all times that precede base.
 func EarlierThan(base time.Time, times []time.Time) []time.Time {
 	result := []time.Time{}
 	for _, cand := range times {
 		if cand.Before(base) {
+			result = append(result, cand)
+		}
+	}
+	return result
+}
+
+// EarlierThanOrEqual filters a list of Times to all times that are equal to or precede base.
+func EarlierThanOrEqual(base time.Time, times []time.Time) []time.Time {
+	result := []time.Time{}
+	for _, cand := range times {
+		if cand.Before(base) || cand.Equal(base) {
 			result = append(result, cand)
 		}
 	}
@@ -57,16 +58,18 @@ func EarlierThan(base time.Time, times []time.Time) []time.Time {
 // If keepInitial is true, the first time in the result will be the first time in times. Otherwise, the first time is
 // omitted.
 // Times must be in descending order.
-func FollowingTimesByInterval(period BackupPeriod, keepInitial bool, times []time.Time) []time.Time {
+func FollowingTimesByInterval(period Backup, keepInitial bool, times []time.Time) []time.Time {
 	chain := []time.Time{}
 	if keepInitial {
 		chain = append(chain, times[0])
 	}
+	base := times[0]
 	for {
 		if len(chain) >= period.Count || len(times) == 0 {
 			return chain
 		}
-		earliest := EarliestTimeWithinInterval(period.Duration, times[0], times)
+		earliest := EarliestTimeWithinInterval(period.Duration, base, times)
+		base = earliest
 		chain = append(chain, earliest)
 		times = EarlierThan(earliest, times)
 	}
@@ -74,23 +77,20 @@ func FollowingTimesByInterval(period BackupPeriod, keepInitial bool, times []tim
 
 // AllTimesForIntervals evaluates a long list of Times and filters it to the ones that match the periods' counts and
 // durations, in the order the periods were listed.
-func AllTimesForIntervals(periods []BackupPeriod, times []time.Time) []time.Time {
+// This method modifies the original times slice to sort the times in descending order.
+func AllTimesForIntervals(periods []Backup, times []time.Time) []time.Time {
 	remaining := times
 	SortDesc(remaining)
-	fmt.Printf("first: %+v\n", remaining[0])
 	allTimes := []time.Time{}
 	lastTime := time.Time{}
 	for _, period := range periods {
-		first := lastTime.IsZero()
-		results := FollowingTimesByInterval(period, first, remaining)
+		results := FollowingTimesByInterval(period, lastTime.IsZero(), remaining)
 		allTimes = append(allTimes, results...)
-		// fmt.Printf("%+v\n", period)
-		// fmt.Printf("%+v\n", len(results))
 		if len(results) == 0 {
 			return allTimes
 		}
 		lastTime = results[len(results)-1]
-		remaining = EarlierThan(lastTime, remaining)
+		remaining = EarlierThanOrEqual(lastTime, remaining)
 	}
 	return allTimes
 }
