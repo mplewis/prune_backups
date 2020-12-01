@@ -119,6 +119,20 @@ var _ = Describe("period", func() {
 				ymd("2020-01-01"),
 			}))
 		})
+
+		It("handles the case when no more dates are found within the interval", func() {
+			dates := []time.Time{
+				ymd("2020-01-28"),
+				ymd("2020-01-24"),
+				ymd("2020-01-01"),
+			}
+			Expect(period.FollowingTimesByInterval(
+				period.Backup{Count: 4, Duration: 7 * day}, true, dates,
+			)).To(Equal([]time.Time{
+				ymd("2020-01-28"),
+				ymd("2020-01-24"),
+			}))
+		})
 	})
 
 	Describe("AllTimesForIntervals", func() {

@@ -69,6 +69,9 @@ func FollowingTimesByInterval(period Backup, keepInitial bool, times []time.Time
 			return chain
 		}
 		earliest := EarliestTimeWithinInterval(period.Duration, base, times)
+		if earliest.IsZero() {
+			return chain
+		}
 		base = earliest
 		chain = append(chain, earliest)
 		times = EarlierThan(earliest, times)
