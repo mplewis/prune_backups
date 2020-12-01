@@ -41,14 +41,14 @@ func days(from string, to string) []time.Time {
 }
 
 var _ = Describe("period", func() {
-	// Describe("SortDesc", func() {
-	// 	It("sorts dates in descending order", func() {
-	// 		dates := days("2020-05-10", "2020-05-14")
-	// 		period.SortDesc(dates)
-	// 		Expect(dates[0]).To(Equal(ymd("2020-05-14")))
-	// 		Expect(dates[4]).To(Equal(ymd("2020-05-10")))
-	// 	})
-	// })
+	Describe("SortDesc", func() {
+		It("sorts dates in descending order", func() {
+			dates := days("2020-05-10", "2020-05-14")
+			period.SortDesc(dates)
+			Expect(dates[0]).To(Equal(ymd("2020-05-14")))
+			Expect(dates[4]).To(Equal(ymd("2020-05-10")))
+		})
+	})
 
 	Describe("EarliestTimeWithinInterval", func() {
 		It("picks the proper time for a descending-order date range", func() {
