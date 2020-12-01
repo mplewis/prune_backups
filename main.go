@@ -2,60 +2,70 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
-	"time"
+	"log"
+	"os"
 
-	"github.com/mplewis/prune_backups/lib/period"
+	"github.com/mplewis/prune_backups/lib/schedule"
 )
 
-func randInt(min int, max int) int {
-	return rand.Intn(max-min+1) + min
+func env(key string) string {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		log.Fatalf("Unset environment variable: %s\n", key)
+	}
+	return val
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-	last := time.Now()
-	times := []time.Time{last}
-	for i := 0; i < 10000; i++ {
-		count := time.Duration(randInt(-48, -4))
-		last = last.Add(time.Hour * count)
-		times = append(times, last)
+	backups, err := schedule.Parse(env("SCHEDULE"))
+	if err != nil {
+		log.Fatal(err)
 	}
-	fmt.Printf("first: %+v\n", times[0])
-
-	day := time.Hour * 24
-	week := day * 7
-	month := day * 30
-	year := day * 365
-	daily := period.Backup{Count: 4, Duration: day}
-	weekly := period.Backup{Count: 4, Duration: week}
-	monthly := period.Backup{Count: 4, Duration: month}
-	yearly := period.Backup{Count: 4, Duration: year}
-
-	// dailyResults := followingTimesByInterval(daily, true, times)
-	// for _, t := range dailyResults {
-	// 	fmt.Printf("%+v\n", t)
-	// }
-	// fmt.Println()
-	// lastDay := dailyResults[len(dailyResults)-1]
-	// remaining := earlierThan(lastDay, times)
-	// weeklyResults := followingTimesByInterval(weekly, false, remaining)
-	// for _, t := range weeklyResults {
-	// 	fmt.Printf("%+v\n", t)
-	// }
-
-	// intervals := []backupPeriod{daily, weekly, monthly, yearly}
-	// allResults := allTimesForIntervals(intervals, times)
-	// for _, t := range allResults {
-	// 	fmt.Printf("%+v\n", t)
-	// }
-
-	for i := 0; i < 1; i++ {
-		times = append([]time.Time{time.Now().Add(time.Duration(i*12) * time.Hour)}, times...)
-		intervals := []period.Backup{daily, weekly, monthly, yearly}
-		times := period.AllTimesForIntervals(intervals, times)
-		for _, t := range times {
-			fmt.Printf("%+v\n", t)
-		}
+	for _, backup := range backups {
+		fmt.Println(backup)
 	}
+
+	// sess := session.Must(session.NewSession())
+	// client := s3.New(sess)
+	// params := &s3.ListObjectsV2Input{
+	// 	Bucket: aws.String(env("BUCKET")),
+	// }
+	// if val, ok := os.LookupEnv("PREFIX"); ok {
+	// 	params.Prefix = aws.String(val)
+	// }
+
+	// objs := []*s3.Object{}
+	// err := client.ListObjectsV2Pages(params,
+	// 	func(page *s3.ListObjectsV2Output, lastPage bool) bool {
+	// 		objs = append(objs, page.Contents...)
+	// 		return true
+	// 	})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Println(len(objs))
+
+	// dates := []time.Time{}
+	// for _, obj := range objs {
+	// 	dates = append(dates, *obj.LastModified)
+	// }
+
+	// fmt.Println(len(dates))
+
+	// backups := []period.Backup{
+	// 	{Count: 7, Duration: day},
+	// 	{Count: 4, Duration: 7 * day},
+	// 	{Count: 4, Duration: 30 * day},
+	// 	{Count: 4, Duration: 90 * day},
+	// }
+	// results := period.AllTimesForIntervals(backups, dates)
+	// fmt.Println(len(results))
+	// for _, selectedTime := range results {
+	// 	for _, cand := range objs {
+	// 		if *cand.LastModified == selectedTime {
+	// 			fmt.Println(cand)
+	// 			continue
+	// 		}
+	// 	}
+	// }
 }
