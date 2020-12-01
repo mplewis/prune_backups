@@ -1,6 +1,7 @@
 package period
 
 import (
+	"fmt"
 	"sort"
 	"time"
 )
@@ -9,6 +10,10 @@ import (
 type Backup struct {
 	Count    int
 	Duration time.Duration
+}
+
+func (b Backup) String() string {
+	return fmt.Sprintf("{%d backups over %+v}", b.Count, b.Duration)
 }
 
 // SortDesc sorts a list of Times in descending order in-place.
